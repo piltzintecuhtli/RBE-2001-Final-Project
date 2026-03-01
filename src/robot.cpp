@@ -46,6 +46,7 @@ float clawPoses[] = {
 
 void moveServo(Servo32U4Base& servo, float angle) {
     servo.setTargetPos(angleToMs(angle));
+    servo.update();
     delay(1000);
 }
 
