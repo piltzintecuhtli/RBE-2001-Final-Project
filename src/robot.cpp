@@ -15,7 +15,7 @@ int taskTimer = 0;
 
 float angleToMs(float angle) {
     // -90 is 1 ms, 0 is 1.5 ms, 90 is 2 ms
-    return (angle / 180.0) + 1.5;     
+    return ((angle / 90.0) + 1.0) * 1000.0;     
 }
 
 float armPoses[] = {
@@ -45,9 +45,24 @@ float clawPoses[] = {
 };
 
 void moveServo(Servo32U4Base& servo, float angle) {
-    servo.setTargetPos(angleToMs(angle));
-    servo.update();
-    delay(1000);
+    servo.setTargetPos((angle));
+
+    baseServo.update();
+    armServo.update();
+    clawServo.update();
+
+    delay(0.1);
+}
+
+void holdServos(float time) {
+    unsigned long startTime = millis();
+    while(millis() - startTime < time) {
+        baseServo.update();
+        armServo.update();
+        clawServo.update();
+
+        delay(0.1);
+    }
 }
 
 void Robot::InitializeRobot(void)
@@ -89,92 +104,123 @@ void Robot::RobotLoop(void)
         /**
          * Run the chassis loop, which handles low-level control.
          */
+
+        moveServo(baseServo, 1000);
+        holdServos(2000);
+        moveServo(baseServo, 1500);
+        holdServos(2000);
+        moveServo(armServo, 1000);
+        holdServos(2000);
+        moveServo(armServo, 1500);
+        holdServos(2000);
+        moveServo(clawServo, 1000);
+        holdServos(2000);
+        moveServo(clawServo, 2000);
+        holdServos(2000);
+
+
         Twist velocity;
-        if(chassis.ChassisLoop(velocity)) {
-            // We do FK regardless of state
-            UpdatePose(velocity);
+        // if(chassis.ChassisLoop(velocity)) {
+        //     // We do FK regardless of state
+        //     UpdatePose(velocity);
                 
-            /**
-             * Here, we break with tradition and only call these functions if we're in the 
-             * DRIVE_TO_POINT state. CheckReachedDestination() is expensive, so we don't want
-             * to do all the maths when we don't need to.
-             * 
-             * While we're at it, we'll toss DriveToPoint() in, as well.
-             */ 
-            if (robotState == ROBOT_TASK_WAIT) {
-                taskTimer--;
-                if (taskTimer <= 0) {
-                    SetDestination(pose);
-                }
-            }
-            else if(buttonC.isPressed()) {
-                taskTimer = 30;
-                robotState = ROBOT_TASK;
-                pose = Pose(poses[poseIndex][0], poses[poseIndex][1], 0);
-            }
-            if(robotState == ROBOT_TASK) {
-                // move arm to first block and hold it
-                moveServo(armServo, armPoses[0]);
-                moveServo(baseServo, baseArmPoses[0]);
-                moveServo(clawServo, clawPoses[0]);
+        //     /**
+        //      * Here, we break with tradition and only call these functions if we're in the 
+        //      * DRIVE_TO_POINT state. CheckReachedDestination() is expensive, so we don't want
+        //      * to do all the maths when we don't need to.
+        //      * 
+        //      * While we're at it, we'll toss DriveToPoint() in, as well.
+        //      */ 
+        //     if (robotState == ROBOT_TASK_WAIT) {
+        //         taskTimer--;
+        //         if (taskTimer <= 0) {
+        //             SetDestination(pose);
+        //         }
+        //     }
+        //     else if(buttonC.isPressed()) {
+        //         taskTimer = 30;
+        //         robotState = ROBOT_TASK;
+        //         pose = Pose(poses[poseIndex][0], poses[poseIndex][1], 0);
+        //     }
+        //     if(robotState == ROBOT_TASK) {
+        //         // move arm to first block and hold it
+        //         moveServo(baseServo, -90);
+        //         moveServo(armServo, -90);
+        //         moveServo(clawServo, -90);
 
-                moveServo(baseServo, baseArmPoses[1]);
-                moveServo(armServo, armPoses[1]);
+        //         moveServo(baseServo, 0);
+        //         moveServo(armServo, 0);
+        //         moveServo(clawServo, 0);
 
-                moveServo(baseServo, baseArmPoses[2]);
-                moveServo(clawServo, clawPoses[1]); // release block on first shelf
+        //         moveServo(baseServo, 90);
+        //         moveServo(armServo, 90);
+        //         moveServo(clawServo, 90);
 
-                moveServo(baseServo, baseArmPoses[3]);
-                moveServo(armServo, armPoses[2]);
+        //         moveServo(baseServo, 0);
+        //         moveServo(armServo, 0);
+        //         moveServo(clawServo, 0);
 
-                moveServo(baseServo, baseArmPoses[4]);
-                moveServo(clawServo, clawPoses[0]); // grab block on second shelf
+        //         // moveServo(armServo, armPoses[0]);
+        //         // moveServo(baseServo, baseArmPoses[0]);
+        //         // moveServo(clawServo, clawPoses[0]);
 
-                moveServo(baseServo, baseArmPoses[5]);
-                moveServo(armServo, armPoses[3]);
+        //         // moveServo(baseServo, baseArmPoses[1]);
+        //         // moveServo(armServo, armPoses[1]);
 
-                moveServo(baseServo, baseArmPoses[6]);
-                moveServo(clawServo, clawPoses[1]); // release block on final shelf
+        //         // moveServo(baseServo, baseArmPoses[2]);
+        //         // moveServo(clawServo, clawPoses[1]); // release block on first shelf
 
-                moveServo(baseServo, baseArmPoses[7]);
-                moveServo(armServo, armPoses[4]); // move arm out of the way
+        //         // moveServo(baseServo, baseArmPoses[3]);
+        //         // moveServo(armServo, armPoses[2]);
 
-                robotState = ROBOT_TASK_WAIT;
-            }
-            if(robotState == ROBOT_DRIVE_TO_POINT) {
+        //         // moveServo(baseServo, baseArmPoses[4]);
+        //         // moveServo(clawServo, clawPoses[0]); // grab block on second shelf
 
-                // spin to face the point to minimize turning while driving
+        //         // moveServo(baseServo, baseArmPoses[5]);
+        //         // moveServo(armServo, armPoses[3]);
+
+        //         // moveServo(baseServo, baseArmPoses[6]);
+        //         // moveServo(clawServo, clawPoses[1]); // release block on final shelf
+
+        //         // moveServo(baseServo, baseArmPoses[7]);
+        //         // moveServo(armServo, armPoses[4]); // move arm out of the way
+
+        //         // robotState = ROBOT_TASK_WAIT;
+        //     }
+        //     if(robotState == ROBOT_DRIVE_TO_POINT) {
+
+        //         // spin to face the point to minimize turning while driving
                 
-                float xErr = destPose.x - currPose.x;
-                float yErr = destPose.y - currPose.y;
-                float errHead = atan2(yErr, xErr) - currPose.theta;
-                errHead = fmod(errHead, 2 * PI);
-                errHead -= (errHead > PI) ? 2 * PI : 0;
+        //         float xErr = destPose.x - currPose.x;
+        //         float yErr = destPose.y - currPose.y;
+        //         float errHead = atan2(yErr, xErr) - currPose.theta;
+        //         errHead = fmod(errHead, 2 * PI);
+        //         errHead -= (errHead > PI) ? 2 * PI : 0;
 
-                Pose tempPose = Pose(0, 0, errHead);
+        //         Pose tempPose = Pose(0, 0, errHead);
 
-                if(!spinned) {
-                    SetDestination(tempPose);
-                    Spin();
-                    if(CheckSpin()) {
-                        HandleDestination();
-                        spinned = true;
-                    }
-                }
-                // drive to point with hopefully minimal turning
-                else {
-                    SetDestination(pose);
-                    DriveToPoint();
-                    if(CheckReachedDestination()) {
-                        HandleDestination();
-                        // if at destination, update to the next pose in the list
-                        if(poseIndex <= sizeof(poses)/sizeof(poses[0])) {
-                            poseIndex++;
-                            pose = Pose(poses[poseIndex][0], poses[poseIndex][1], 0);
-                        }
-                    }
-                }
-            }
-        }
+        //         if(!spinned) {
+        //             SetDestination(tempPose);
+        //             Spin();
+        //             if(CheckSpin()) {
+        //                 HandleDestination();
+        //                 spinned = true;
+        //             }
+        //         }
+        //         // drive to point with hopefully minimal turning
+        //         else {
+        //             SetDestination(pose);
+        //             DriveToPoint();
+        //             if(CheckReachedDestination()) {
+        //                 HandleDestination();
+        //                 // if at destination, update to the next pose in the list
+        //                 if(poseIndex <= sizeof(poses)/sizeof(poses[0])) {
+        //                     poseIndex++;
+        //                     pose = Pose(poses[poseIndex][0], poses[poseIndex][1], 0);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
     }
 
